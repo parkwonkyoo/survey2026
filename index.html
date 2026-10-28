@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>디지털교육 설문 링크 조회</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- QRCode.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+    body { font-family: 'Pretendard', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 antialiased flex flex-col justify-between">
+
+  <div class="max-w-2xl mx-auto w-full px-4 py-8">
+    <!-- 헤더 -->
+    <header class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold mb-3">
+        <i class="fa-solid fa-graduation-cap"></i> 2026 디지털교육 맞춤 설문
+      </div>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+        참여 설문 링크 간편 조회
+      </h1>
+      <p class="mt-2 text-sm text-slate-500">
+        학생의 <strong>반, 번호, 이름</strong>을 입력하시면 개인별 고유 설문 링크가 나타납니다.
+      </p>
+    </header>
+
+    <!-- 검색 입력 카드 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 md:p-8 mb-6">
+      <form id="searchForm" class="space-y-4" onsubmit="handleSearch(event)">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- 반 선택 -->
+          <div>
+            <label for="gradeClass" class="block text-xs font-semibold text-slate-600 mb-1.5">반</label>
+            <select id="gradeClass" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm" required>
+              <option value="">반 선택</option>
+              <option value="1">1반</option>
+              <option value="2">2반</option>
+              <option value="3">3반</option>
+              <option value="4">4반</option>
+              <option value="5">5반</option>
+              <option value="6">6반</option>
+              <option value="7">7반</option>
+            </select>
+          </div>
+
+          <!-- 번호 입력 -->
+          <div>
+            <label for="studentNum" class="block text-xs font-semibold text-slate-600 mb-1.5">번호</label>
+            <input type="number" id="studentNum" placeholder="예: 10" min="1" max="99" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" required />
+          </div>
+
+          <!-- 이름 입력 -->
+          <div>
+            <label for="studentName" class="block text-xs font-semibold text-slate-600 mb-1.5">이름</label>
+            <input type="text" id="studentName" placeholder="예: 조민지" autocomplete="off" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" required />
+          </div>
+        </div>
+
+        <button type="submit" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition duration-150 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-magnifying-glass"></i> 링크 조회하기
+        </button>
+      </form>
+    </div>
+
+    <!-- 결과 알림 영역 (조회 전 숨김) -->
+    <div id="resultArea" class="hidden space-y-6">
+      <!-- 확인된 학생 정보 헤더 -->
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider block">조회 완료</span>
+          <h2 id="studentBadge" class="text-lg font-bold text-slate-800"></h2>
+        </div>
+        <button onclick="resetSearch()" class="text-xs text-slate-500 hover:text-slate-800 underline">다시 조회</button>
+      </div>
+
+      <!-- 링크 카드 그리드 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- 1. 학생 참여 링크 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold">
+                <i class="fa-solid fa-user-graduate"></i> 학생용
+              </span>
+              <span class="text-[11px] text-slate-400">학생 설문 응답</span>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">학생 참여 설문</h3>
+            <p class="text-xs text-slate-500 mb-4">학생 본인이 태블릿이나 스마트폰으로 응답할 때 참여합니다.</p>
+            
+            <!-- QR 코드 -->
+            <div class="flex justify-center p-3 bg-slate-50 rounded-xl mb-4 border border-slate-100">
+              <div id="qrcodeStudent" class="w-[130px] h-[130px]"></div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <a id="btnStudentLink" href="#" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition">
+              <span>설문 바로가기</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+            </a>
+            <button id="btnCopyStudent" onclick="copyLink('student')" class="w-full flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-3 rounded-xl text-xs transition">
+              <i class="fa-regular fa-copy"></i> <span>학생 링크 복사</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. 학부모 참여 링크 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold">
+                <i class="fa-solid fa-users"></i> 학부모용
+              </span>
+              <span class="text-[11px] text-slate-400">학부모 설문 응답</span>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">학부모 참여 설문</h3>
+            <p class="text-xs text-slate-500 mb-4">학부모님께서 자녀의 디지털 학습에 대해 응답하실 때 참여합니다.</p>
+            
+            <!-- QR 코드 -->
+            <div class="flex justify-center p-3 bg-slate-50 rounded-xl mb-4 border border-slate-100">
+              <div id="qrcodeParent" class="w-[130px] h-[130px]"></div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <a id="btnParentLink" href="#" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition">
+              <span>설문 바로가기</span> <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+            </a>
+            <button id="btnCopyParent" onclick="copyLink('parent')" class="w-full flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-3 rounded-xl text-xs transition">
+              <i class="fa-regular fa-copy"></i> <span>학부모 링크 복사</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 검색 실패 안내창 -->
+    <div id="notFoundAlert" class="hidden bg-rose-50 border border-rose-200 rounded-2xl p-5 text-center">
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-rose-100 text-rose-600 mb-2">
+        <i class="fa-solid fa-circle-exclamation text-lg"></i>
+      </div>
+      <h3 class="text-sm font-bold text-rose-900">일치하는 학생 정보를 찾을 수 없습니다</h3>
+      <p class="text-xs text-rose-600 mt-1">반, 번호, 이름 철자를 다시 한 번 확인해 주시기 바랍니다.</p>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 메시지 -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold py-2.5 px-5 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center gap-2">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">링크가 클립보드에 복사되었습니다.</span>
+  </div>
+
+  <footer class="text-center py-4 text-xs text-slate-400 border-t border-slate-200 bg-white">
+    디지털교육 학생 및 학부모 설문 지원 서비스
+  </footer>
+
+  <script>
+    // 엑셀 시트 64명 데이터 전체 내장
+    const studentData = [
+      {"반": 1, "번호": 10, "이름": "조민지", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=1bcbc35f71852c2375a26f11c50423b176f7", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=1bcbc35f71852c2375a26f11c50423b176f7&as=parent"},
+      {"반": 1, "번호": 4, "이름": "박재인", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=cfa55af6da1796a613622a0c92f6c244e66c", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=cfa55af6da1796a613622a0c92f6c244e66c&as=parent"},
+      {"반": 1, "번호": 5, "이름": "박휘연", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=53ae7b516c4506b81627e9bfad2e2cdc4345", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=53ae7b516c4506b81627e9bfad2e2cdc4345&as=parent"},
+      {"반": 1, "번호": 51, "이름": "강지환", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=4d1dfffe203a71acbd62248e37b5d3c5db3a", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=4d1dfffe203a71acbd62248e37b5d3c5db3a&as=parent"},
+      {"반": 1, "번호": 52, "이름": "김규원", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=18b03e8a1dc95bb5758e0194ed6245700f83", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=18b03e8a1dc95bb5758e0194ed6245700f83&as=parent"},
+      {"반": 1, "번호": 53, "이름": "김대우", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=1e2ae1e8eedbcf4d02536ed4c5944417970d", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=1e2ae1e8eedbcf4d02536ed4c5944417970d&as=parent"},
+      {"반": 1, "번호": 55, "이름": "김시언", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=796181dcf61a7e7fa4e2011e3c5707ff2f4b", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=796181dcf61a7e7fa4e2011e3c5707ff2f4b&as=parent"},
+      {"반": 1, "번호": 59, "이름": "은재건", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=5cd39a64e7251fd1abd98c389804e1c049f5", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=5cd39a64e7251fd1abd98c389804e1c049f5&as=parent"},
+      {"반": 1, "번호": 9, "이름": "윤서연", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2d3825f26e9d019a53b109559cb2e957aa33", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2d3825f26e9d019a53b109559cb2e957aa33&as=parent"},
+      {"반": 2, "번호": 10, "이름": "최민경", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9a9c4f2d5e9b80b0c955680864303aa99fbd", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9a9c4f2d5e9b80b0c955680864303aa99fbd&as=parent"},
+      {"반": 2, "번호": 3, "이름": "김나윤", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=1c89b86c27b2cd8f105f9883519d6bafc418", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=1c89b86c27b2cd8f105f9883519d6bafc418&as=parent"},
+      {"반": 2, "번호": 52, "이름": "김도영", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9535bca5da91447ab396cfffda37978264ed", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9535bca5da91447ab396cfffda37978264ed&as=parent"},
+      {"반": 2, "번호": 53, "이름": "배도연", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=d8b078dae73ee49632316e12a94d25643ec5", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=d8b078dae73ee49632316e12a94d25643ec5&as=parent"},
+      {"반": 2, "번호": 57, "이름": "이호준", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=072e9cc63819fd3d2795625b0a644913ed0f", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=072e9cc63819fd3d2795625b0a644913ed0f&as=parent"},
+      {"반": 2, "번호": 58, "이름": "이효민", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=79879ed05384093be4805b57fb9b6c7b45da", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=79879ed05384093be4805b57fb9b6c7b45da&as=parent"},
+      {"반": 2, "번호": 6, "이름": "송하율", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=ecf706483fdcc37f18d73b38c99c697cc84c", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=ecf706483fdcc37f18d73b38c99c697cc84c&as=parent"},
+      {"반": 2, "번호": 61, "이름": "한승현", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=d167023663602991ae25b38f030231fb5059", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=d167023663602991ae25b38f030231fb5059&as=parent"},
+      {"반": 2, "번호": 9, "이름": "조한슬", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=5b1e799ef65d58f91e95cff48042d3e8f65d", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=5b1e799ef65d58f91e95cff48042d3e8f65d&as=parent"},
+      {"반": 3, "번호": 2, "이름": "김하린", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=b796c60d7e3109598342a71de1f8848858f8", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=b796c60d7e3109598342a71de1f8848858f8&as=parent"},
+      {"반": 3, "번호": 4, "이름": "박서빈", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=3819110ec37b411db22ee444135295aaacdf", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=3819110ec37b411db22ee444135295aaacdf&as=parent"},
+      {"반": 3, "번호": 5, "이름": "석효진", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=21da3109496995c1f43a90e240bec7263678", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=21da3109496995c1f43a90e240bec7263678&as=parent"},
+      {"반": 3, "번호": 54, "이름": "김지한", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=119678bb6d47feb99e732c0d70a60b9fac86", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=119678bb6d47feb99e732c0d70a60b9fac86&as=parent"},
+      {"반": 3, "번호": 55, "이름": "김지훈", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=6151a2d4d10565c7dfbf8a22c5ce00f7d0f1", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=6151a2d4d10565c7dfbf8a22c5ce00f7d0f1&as=parent"},
+      {"반": 3, "번호": 59, "이름": "신도영", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=d4fd946aba2cdebd9a320330d07817692813", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=d4fd946aba2cdebd9a320330d07817692813&as=parent"},
+      {"반": 3, "번호": 60, "이름": "오주원", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9017b27062d54743b698f92d024aaa00d4fb", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9017b27062d54743b698f92d024aaa00d4fb&as=parent"},
+      {"반": 3, "번호": 62, "이름": "이루하", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2a8c2addb34bfad149823052971551ba015e", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2a8c2addb34bfad149823052971551ba015e&as=parent"},
+      {"반": 3, "번호": 7, "이름": "유아린", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2bc37b3512745a1d9d8afde9bcb8617da61a", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2bc37b3512745a1d9d8afde9bcb8617da61a&as=parent"},
+      {"반": 4, "번호": 5, "이름": "이시아", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=f63d635b2653d67d14c860ba75118a8da244", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=f63d635b2653d67d14c860ba75118a8da244&as=parent"},
+      {"반": 4, "번호": 51, "이름": "권라현", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=e482bd5803141fdbd68ae86a475c7c772dcc", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=e482bd5803141fdbd68ae86a475c7c772dcc&as=parent"},
+      {"반": 4, "번호": 52, "이름": "김도윤", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9e698b7f3a3644a67236dbe16c4b369f059d", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9e698b7f3a3644a67236dbe16c4b369f059d&as=parent"},
+      {"반": 4, "번호": 55, "이름": "배서진", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=fff70ec03a57cb1915729cfb5ef5f56c292d", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=fff70ec03a57cb1915729cfb5ef5f56c292d&as=parent"},
+      {"반": 4, "번호": 58, "이름": "정찬영", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=c64381d41d265e8cb0eea79134b048c3abaf", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=c64381d41d265e8cb0eea79134b048c3abaf&as=parent"},
+      {"반": 4, "번호": 59, "이름": "조율래", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=88b9141a615fd31291118e5d7351ef5348a2", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=88b9141a615fd31291118e5d7351ef5348a2&as=parent"},
+      {"반": 4, "번호": 6, "이름": "이예담", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=8b32c567286ce774da87313be0a65ad871f4", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=8b32c567286ce774da87313be0a65ad871f4&as=parent"},
+      {"반": 4, "번호": 60, "이름": "최민서", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=455538c0df80c45f75df7a2aa052d059437d", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=455538c0df80c45f75df7a2aa052d059437d&as=parent"},
+      {"반": 4, "번호": 7, "이름": "장정인", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=70eae8300d9c1cfa8d54bd5190d4f3bc9bf7", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=70eae8300d9c1cfa8d54bd5190d4f3bc9bf7&as=parent"},
+      {"반": 5, "번호": 1, "이름": "곽민서", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=02f5ffde53784e7ffb41b6447bc23a06e1ec", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=02f5ffde53784e7ffb41b6447bc23a06e1ec&as=parent"},
+      {"반": 5, "번호": 2, "이름": "구예나", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=61e944de25bf0534eeb0301da04a1061b5ff", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=61e944de25bf0534eeb0301da04a1061b5ff&as=parent"},
+      {"반": 5, "번호": 3, "이름": "권세진", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=6dbed0954e2fc4466a4ea4b8cbb99b8991f0", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=6dbed0954e2fc4466a4ea4b8cbb99b8991f0&as=parent"},
+      {"반": 5, "번호": 4, "이름": "권아인", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=c7576d62befd98a73308c5c5bc36867dfda9", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=c7576d62befd98a73308c5c5bc36867dfda9&as=parent"},
+      {"반": 5, "번호": 5, "이름": "김예주", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=bc83f09538bef1d225c27a655f9807645e5a", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=bc83f09538bef1d225c27a655f9807645e5a&as=parent"},
+      {"반": 5, "번호": 51, "이름": "김도건", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=65010d87ec985ac9cef20cc7515f85377096", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=65010d87ec985ac9cef20cc7515f85377096&as=parent"},
+      {"반": 5, "번호": 56, "이름": "오지호", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=5025aca62c910c3174efad7081eea1b36622", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=5025aca62c910c3174efad7081eea1b36622&as=parent"},
+      {"반": 5, "번호": 6, "이름": "오나경", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=e14ba1c03ac0f62ee4d4a581b153c19c413d", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=e14ba1c03ac0f62ee4d4a581b153c19c413d&as=parent"},
+      {"반": 5, "번호": 60, "이름": "천기범", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=6de5aeaba7060576eafac83aedd93593bc7a", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=6de5aeaba7060576eafac83aedd93593bc7a&as=parent"},
+      {"반": 5, "번호": 62, "이름": "최현우", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=8183076cda86cfd1083c2b7c11eba55c89d1", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=8183076cda86cfd1083c2b7c11eba55c89d1&as=parent"},
+      {"반": 6, "번호": 3, "이름": "김승아", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=04983351d4e2becb5cabfb0de1e217e4ca79", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=04983351d4e2becb5cabfb0de1e217e4ca79&as=parent"},
+      {"반": 6, "번호": 5, "이름": "박시은", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=8b033909c797e12c7ec16ee5685dc8de2554", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=8b033909c797e12c7ec16ee5685dc8de2554&as=parent"},
+      {"반": 6, "번호": 51, "이름": "고한민", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=087fe19b5d51259a1793d37576775ac6bee0", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=087fe19b5d51259a1793d37576775ac6bee0&as=parent"},
+      {"반": 6, "번호": 53, "이름": "김성준", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=906904532cadb1f3e0c36bb2ba75d946c7d5", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=906904532cadb1f3e0c36bb2ba75d946c7d5&as=parent"},
+      {"반": 6, "번호": 54, "이름": "김시원", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=89a20e3c5563e77bbc183cb3fa912ced5c39", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=89a20e3c5563e77bbc183cb3fa912ced5c39&as=parent"},
+      {"반": 6, "번호": 55, "이름": "김재인", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=751118526a82a2df1575eb0255651ef85769", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=751118526a82a2df1575eb0255651ef85769&as=parent"},
+      {"반": 6, "번호": 59, "이름": "박호근", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=08549e50580367c36d60fe2441a97142d191", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=08549e50580367c36d60fe2441a97142d191&as=parent"},
+      {"반": 6, "번호": 6, "이름": "백예은", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=90532fd7fb3d1e891986401cbf0fe2eb01fc", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=90532fd7fb3d1e891986401cbf0fe2eb01fc&as=parent"},
+      {"반": 6, "번호": 61, "이름": "어로하", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=736456c0047257bac35f3a1071c5c06dc108", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=736456c0047257bac35f3a1071c5c06dc108&as=parent"},
+      {"반": 6, "번호": 9, "이름": "오연서", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2c136a49b480916f5ca7229795218fb3f230", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2c136a49b480916f5ca7229795218fb3f230&as=parent"},
+      {"반": 7, "번호": 1, "이름": "강지수", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9803e38c2535632da24696fd53c8d44a289e", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=9803e38c2535632da24696fd53c8d44a289e&as=parent"},
+      {"반": 7, "번호": 11, "이름": "하가온", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=574aad606a82830fd76c74c7c82bfb8cda3e", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=574aad606a82830fd76c74c7c82bfb8cda3e&as=parent"},
+      {"반": 7, "번호": 3, "이름": "김수림", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=190d25ae3bb22c1d46f9932166dd3d089b08", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=190d25ae3bb22c1d46f9932166dd3d089b08&as=parent"},
+      {"반": 7, "번호": 53, "이름": "명하진", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=4d031a53ddf0b43d281f73b868cc45056ee5", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=4d031a53ddf0b43d281f73b868cc45056ee5&as=parent"},
+      {"반": 7, "번호": 57, "이름": "원지훈", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=65b8a61a3dcd1c18fee902fd597d38912586", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=65b8a61a3dcd1c18fee902fd597d38912586&as=parent"},
+      {"반": 7, "번호": 58, "이름": "이서진", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2b88fed08cba1af0062e51b2a51b4032c3eb", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=2b88fed08cba1af0062e51b2a51b4032c3eb&as=parent"},
+      {"반": 7, "번호": 59, "이름": "전현권", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=43674b4621a6f1a9beece8070a1dc541af82", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=43674b4621a6f1a9beece8070a1dc541af82&as=parent"},
+      {"반": 7, "번호": 6, "이름": "박예린", "학생 참여 링크": "https://www.survey.co.kr/Custom/776/?r=ce696c2252328eebb269ccc5b9294a5b2382", "학부모 참여 링크": "https://www.survey.co.kr/Custom/776/?r=ce696c2252328eebb269ccc5b9294a5b2382&as=parent"}
+    ];
+
+    let currentStudentLink = '';
+    let currentParentLink = '';
+
+    function handleSearch(e) {
+      e.preventDefault();
+      const gradeClass = document.getElementById('gradeClass').value.trim();
+      const studentNum = parseInt(document.getElementById('studentNum').value, 10);
+      const studentName = document.getElementById('studentName').value.replace(/\s+/g, '');
+
+      // 일치 학생 탐색
+      const matched = studentData.find(item => 
+        String(item['반']) === gradeClass &&
+        parseInt(item['번호'], 10) === studentNum &&
+        item['이름'].replace(/\s+/g, '') === studentName
+      );
+
+      const resultArea = document.getElementById('resultArea');
+      const notFoundAlert = document.getElementById('notFoundAlert');
+
+      if (matched) {
+        currentStudentLink = matched['학생 참여 링크'];
+        currentParentLink = matched['학부모 참여 링크'];
+
+        document.getElementById('studentBadge').textContent = `${matched['반']}반 ${matched['번호']}번 ${matched['이름']} 학생`;
+        
+        document.getElementById('btnStudentLink').href = currentStudentLink;
+        document.getElementById('btnParentLink').href = currentParentLink;
+
+        // QR코드 렌더링
+        renderQR('qrcodeStudent', currentStudentLink);
+        renderQR('qrcodeParent', currentParentLink);
+
+        resultArea.classList.remove('hidden');
+        notFoundAlert.classList.add('hidden');
+        resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        resultArea.classList.add('hidden');
+        notFoundAlert.classList.remove('hidden');
+      }
+    }
+
+    function renderQR(elementId, text) {
+      const container = document.getElementById(elementId);
+      container.innerHTML = '';
+      new QRCode(container, {
+        text: text,
+        width: 130,
+        height: 130,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function copyLink(type) {
+      const link = type === 'student' ? currentStudentLink : currentParentLink;
+      if (!link) return;
+
+      navigator.clipboard.writeText(link).then(() => {
+        showToast(type === 'student' ? '학생 설문 링크가 복사되었습니다.' : '학부모 설문 링크가 복사되었습니다.');
+      }).catch(() => {
+        const tempInput = document.createElement('input');
+        tempInput.value = link;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('링크가 복사되었습니다.');
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2300);
+    }
+
+    function resetSearch() {
+      document.getElementById('searchForm').reset();
+      document.getElementById('resultArea').classList.add('hidden');
+      document.getElementById('notFoundAlert').classList.add('hidden');
+      document.getElementById('gradeClass').focus();
+    }
+  </script>
+</body>
+</html>
